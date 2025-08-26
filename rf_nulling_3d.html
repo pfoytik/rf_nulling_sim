@@ -747,40 +747,105 @@
             const iterations = 50;
             const learningRate = 2;
             
-            for (let iter = 0; iter < iterations; iter++) {
+            let bestConfig = elements.map(el => ({...el}));
+            let bestNullDepth = 0;
+            
+            // Try multiple random starting points for better optimization
+            for (let trial = 0; trial < 10; trial++) {
+                // Start with current configuration
+                let testElements = elements.map(el => ({...el}));
+                
+                for (let iter = 0; iter < iterations; iter++) {
+                    testElements.forEach((element, i) => {
+                        if (i === 0) return; // Keep element 1 as phase reference
+                        
+                        const originalPhase = element.phase;
+                        
+                        // Try phase adjustments
+                        element.phase += learningRate;
+                        const af1 = calculate3DArrayFactor(nullAzimuth, nullElevation);
+                        
+                        element.phase = originalPhase - learningRate;
+                        const af2 = calculate3DArrayFactor(nullAzimuth, nullElevation);
+                        
+                        // Keep better phase
+                        if (af2 < af1) {
+                            // af2 is better (keep the -learningRate adjustment)
+                        } else {
+                            element.phase = originalPhase + learningRate;
+                            const af3 = calculate3DArrayFactor(nullAzimuth, nullElevation);
+                            if (af3 >= af1) {
+                                element.phase = originalPhase; // No improvement
+                            }
+                        }
+                        
+                        // Wrap phase to [-180, 180]
+                        while (element.phase > 180) element.phase -= 360;
+                        while (element.phase < -180) element.phase += 360;
+                    });
+                }
+                
+                // Evaluate this configuration
+                const finalAF = calculate3DArrayFactor(nullAzimuth, nullElevation);
+                
+                // Calculate max AF for null depth calculation
+                let maxAF = 0;
+                for (let testAngle = 0; testAngle < 360; testAngle += 10) {
+                    const af = calculate3DArrayFactor(testAngle, 0);
+                    maxAF = Math.max(maxAF, af);
+                }
+                
+                const nullDepth = maxAF > 0 ? -20 * Math.log10(finalAF / maxAF) : 0;
+                
+                if (nullDepth > bestNullDepth) {
+                    bestNullDepth = nullDepth;
+                    bestConfig = testElements.map(el => ({...el}));
+                }
+            }
+            
+            // Apply best configuration to actual elements
+            elements.forEach((element, i) => {
+                element.phase = bestConfig[i].phase;
+                element.amplitude = bestConfig[i].amplitude;
+            });
+            
+            // Force complete UI and graphics update
+            updateVisualization();
+            render();
+            
+            // Update the individual control sliders to reflect new values
+            setTimeout(() => {
                 elements.forEach((element, i) => {
-                    if (i === 0) return; // Reference element
+                    const phaseSlider = document.getElementById(`phase3d${i}`);
+                    const phaseValue = document.getElementById(`phaseValue3d${i}`);
+                    const ampSlider = document.getElementById(`amp3d${i}`);
+                    const ampValue = document.getElementById(`ampValue3d${i}`);
                     
-                    const originalPhase = element.phase;
-                    
-                    // Try phase adjustments
-                    element.phase += learningRate;
-                    const af1 = calculate3DArrayFactor(nullAzimuth, nullElevation);
-                    
-                    element.phase = originalPhase - learningRate;
-                    const af2 = calculate3DArrayFactor(nullAzimuth, nullElevation);
-                    
-                    // Keep better phase
-                    if (af2 < af1) {
-                        // af2 is better
-                    } else {
-                        element.phase = originalPhase + learningRate;
-                        const af3 = calculate3DArrayFactor(nullAzimuth, nullElevation);
-                        if (af3 >= af1) {
-                            element.phase = originalPhase;
+                    if (phaseSlider) {
+                        phaseSlider.value = element.phase;
+                        if (phaseValue) {
+                            phaseValue.textContent = element.phase.toFixed(0) + '°';
                         }
                     }
                     
-                    // Wrap phase
-                    while (element.phase > 180) element.phase -= 360;
-                    while (element.phase < -180) element.phase += 360;
+                    if (ampSlider) {
+                        ampSlider.value = element.amplitude;
+                        if (ampValue) {
+                            ampValue.textContent = element.amplitude.toFixed(1);
+                        }
+                    }
                 });
-            }
-            
-            updateVisualization();
-            
-            const finalAF = calculate3DArrayFactor(nullAzimuth, nullElevation);
-            alert(`3D Adaptive Nulling Complete!\nTarget: (${nullAzimuth}°, ${nullElevation}°)\nArray: ${arrayType}\nOptimized for 3D space!`);
+                
+                // Show results after UI is updated
+                setTimeout(() => {
+                    alert(`3D Adaptive Nulling Complete!\n` +
+                          `• Target: (${nullAzimuth}°, ${nullElevation}°)\n` +
+                          `• Achieved null depth: ${bestNullDepth.toFixed(1)} dB\n` +
+                          `• Array type: ${arrayType}\n` +
+                          `• Elements: ${elements.length}\n\n` +
+                          `Check the updated phase vectors and radiation pattern!`);
+                }, 100);
+            }, 200);
         }
 
         function resetArray() {
