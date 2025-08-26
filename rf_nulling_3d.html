@@ -322,7 +322,7 @@
             const azimuthRad = azimuth * Math.PI / 180;
             const elevationRad = elevation * Math.PI / 180;
             
-            // Direction vector
+            // Direction vector components (using physics/RF convention)
             const kx = 2 * Math.PI * Math.cos(elevationRad) * Math.cos(azimuthRad);
             const ky = 2 * Math.PI * Math.cos(elevationRad) * Math.sin(azimuthRad);
             const kz = 2 * Math.PI * Math.sin(elevationRad);
@@ -332,7 +332,9 @@
 
             elements.forEach(element => {
                 const phaseRad = element.phase * Math.PI / 180;
-                const spatialPhase = kx * element.position.x + ky * element.position.y + kz * element.position.z;
+                const spatialPhase = kx * element.position.x * spacing + 
+                                   ky * element.position.y * spacing + 
+                                   kz * element.position.z * spacing;
                 const totalPhase = spatialPhase + phaseRad;
 
                 realSum += element.amplitude * Math.cos(totalPhase);
@@ -422,14 +424,25 @@
             nullIndicator.userData.isNullIndicator = true; // Mark for cleanup
             scene1.add(nullIndicator);
 
-            // Calculate null depth
+            // Calculate null depth at target angle - USE SAME CALCULATION AS RESULTANT VECTOR
             const nullAF = calculate3DArrayFactor(nullAzimuth, nullElevation);
             const nullDepth = maxAF > 0 ? -20 * Math.log10(nullAF / maxAF) : 0;
             
-            document.getElementById('nullDepth3D').textContent = 
-                `3D Null Depth: ${nullDepth.toFixed(1)} dB at (${nullAzimuth}°, ${nullElevation}°)`;
-            document.getElementById('nullDepth3D').style.color = 
-                nullDepth > 30 ? '#388e3c' : nullDepth > 15 ? '#f57c00' : '#d32f2f';
+            // Use SAME color thresholds as resultant vector
+            let nullDepthColor, nullDepthText;
+            if (nullAF < 0.5) {
+                nullDepthColor = '#388e3c'; // Green - matches resultant vector
+                nullDepthText = `3D Null Depth: ${nullDepth.toFixed(1)} dB (Excellent!)`;
+            } else if (nullAF < 1.0) {
+                nullDepthColor = '#f57c00'; // Yellow - matches resultant vector  
+                nullDepthText = `3D Null Depth: ${nullDepth.toFixed(1)} dB (Good)`;
+            } else {
+                nullDepthColor = '#d32f2f'; // Red - matches resultant vector
+                nullDepthText = `3D Null Depth: ${nullDepth.toFixed(1)} dB (Poor)`;
+            }
+            
+            document.getElementById('nullDepth3D').textContent = nullDepthText;
+            document.getElementById('nullDepth3D').style.color = nullDepthColor;
         }
 
         function createElementControls() {
@@ -514,10 +527,15 @@
             // Draw array elements
             const colors = [0x4caf50, 0x2196f3, 0xff9800, 0x9c27b0, 0xf44336, 0x00bcd4, 0x795548, 0x607d8b];
             
-            // Calculate resultant vector for null direction
+            // Calculate resultant vector for null direction (using same formula as main calculation)
             let resultantReal = 0, resultantImag = 0;
             const nullAzRad = nullAzimuth * Math.PI / 180;
             const nullElRad = nullElevation * Math.PI / 180;
+            
+            // Use same direction vector calculation as main array factor
+            const kx = 2 * Math.PI * Math.cos(nullElRad) * Math.cos(nullAzRad);
+            const ky = 2 * Math.PI * Math.cos(nullElRad) * Math.sin(nullAzRad);
+            const kz = 2 * Math.PI * Math.sin(nullElRad);
             
             elements.forEach((element, i) => {
                 // Element sphere
@@ -609,12 +627,10 @@
                 vector.userData.isArrayElement = true;
                 scene2.add(vector);
 
-                // Calculate contribution to resultant vector at null direction
-                const spatialPhase = 2 * Math.PI * (
-                    element.position.x * Math.cos(nullElRad) * Math.cos(nullAzRad) +
-                    element.position.y * Math.cos(nullElRad) * Math.sin(nullAzRad) +
-                    element.position.z * Math.sin(nullElRad)
-                ) * spacing;
+                // Calculate contribution to resultant vector at null direction (CORRECTED)
+                const spatialPhase = kx * element.position.x * spacing + 
+                                   ky * element.position.y * spacing + 
+                                   kz * element.position.z * spacing;
                 const totalPhase = spatialPhase + phaseRad;
                 
                 resultantReal += element.amplitude * Math.cos(totalPhase);
