@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RF Nulling Simulations - Interactive Learning</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 50px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .header h1 {
+            font-size: 3.5em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, #fff, #e8f4fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.3em;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .simulators {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 40px;
+            margin-bottom: 50px;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .simulator-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .simulator-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .simulator-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: rotate(45deg);
+            transition: all 0.6s ease;
+            opacity: 0;
+        }
+
+        .simulator-card:hover::before {
+            opacity: 1;
+            left: -100%;
+            top: -100%;
+        }
+
+        .simulator-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+        }
+
+        .simulator-card h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .simulator-card p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            margin-bottom: 25px;
+            line-height: 1.8;
+        }
+
+        .features {
+            list-style: none;
+            text-align: left;
+            margin-bottom: 30px;
+        }
+
+        .features li {
+            padding: 8px 0;
+            position: relative;
+            padding-left: 25px;
+            opacity: 0.85;
+        }
+
+        .features li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #4ade80;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .launch-button {
+            display: inline-block;
+            background: linear-gradient(45deg, #4ade80, #22c55e);
+            color: white;
+            text-decoration: none;
+            padding: 15px 35px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            position: relative;
+            z-index: 1;
+        }
+
+        .launch-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, #22c55e, #16a34a);
+        }
+
+        .difficulty {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .beginner {
+            background: rgba(34, 197, 94, 0.3);
+        }
+
+        .advanced {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .info-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            margin-top: 40px;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .info-section h3 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: left;
+        }
+
+        .info-card h4 {
+            color: #4ade80;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+        }
+
+        .github-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .github-link:hover {
+            background: rgba(0, 0, 0, 0.7);
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5em;
+            }
+            
+            .simulators {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            
+            .simulator-card {
+                padding: 30px 20px;
+            }
+            
+            .github-link {
+                position: static;
+                margin: 20px auto;
+                display: inline-block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="https://github.com/yourusername/rf-nulling-sim" class="github-link">
+        📁 View on GitHub
+    </a>
+
+    <div class="container">
+        <div class="header">
+            <h1>RF Nulling Simulations</h1>
+            <p>Interactive educational tools for understanding Radio Frequency interference cancellation and antenna array beamforming. Learn through hands-on experimentation with real-time 3D visualizations.</p>
+        </div>
+
+        <div class="simulators">
+            <div class="simulator-card" onclick="window.location.href='rf_nulling_2d.html'">
+                <div class="difficulty beginner">Beginner</div>
+                <div class="simulator-icon">📊</div>
+                <h2>2D Nulling Simulator</h2>
+                <p>Perfect starting point for understanding RF nulling fundamentals. Interactive polar plots and clear visual feedback make complex concepts intuitive.</p>
+                
+                <ul class="features">
+                    <li>Real-time polar radiation patterns</li>
+                    <li>Individual element amplitude & phase control</li>
+                    <li>Adaptive nulling algorithms</li>
+                    <li>Multi-element array support (2-8 elements)</li>
+                    <li>Null depth measurements</li>
+                    <li>Phase vector visualization</li>
+                </ul>
+
+                <a href="rf_nulling_2d.html" class="launch-button" onclick="event.stopPropagation()">
+                    Start Learning →
+                </a>
+            </div>
+
+            <div class="simulator-card" onclick="window.location.href='rf_nulling_3d.html'">
+                <div class="difficulty advanced">Advanced</div>
+                <div class="simulator-icon">🌐</div>
+                <h2>3D Nulling Simulator</h2>
+                <p>Advanced 3D visualization showing full spatial radiation patterns. Understand how nulling works in real 3D space with elevation control.</p>
+                
+                <ul class="features">
+                    <li>Full 3D radiation pattern visualization</li>
+                    <li>Linear vs Planar array geometries</li>
+                    <li>Azimuth & elevation null steering</li>
+                    <li>Vector addition visualization</li>
+                    <li>Resultant vector analysis</li>
+                    <li>Phase circle guides & amplitude rings</li>
+                </ul>
+
+                <a href="rf_nulling_3d.html" class="launch-button" onclick="event.stopPropagation()">
+                    Explore 3D →
+                </a>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h3>🎓 Learning Path</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4>Start with 2D</h4>
+                    <p>Begin with the 2D simulator to grasp fundamental concepts like constructive/destructive interference, phase relationships, and the critical importance of amplitude matching.</p>
+                </div>
+                
+                <div class="info-card">
+                    <h4>Advance to 3D</h4>
+                    <p>Move to 3D visualization to understand real-world spatial nulling, elevation control, and the differences between linear and planar array geometries.</p>
+                </div>
+                
+                <div class="info-card">
+                    <h4>Key Experiments</h4>
+                    <p>Try the adaptive nulling algorithms, experiment with amplitude mismatches, and observe how multiple elements provide more nulling flexibility.</p>
+                </div>
+                
+                <div class="info-card">
+                    <h4>Real Applications</h4>
+                    <p>Apply your understanding to radar systems, cellular communications, satellite links, and WiFi optimization scenarios.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h3>🚀 What You'll Learn</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4>Wave Interference</h4>
+                    <p>Visualize how electromagnetic waves add constructively (creating beams) and destructively (creating nulls) based on phase relationships.</p>
+                </div>
+                
+                <div class="info-card">
+                    <h4>Amplitude Importance</h4>
+                    <p>Discover why precise amplitude matching is critical for deep nulls and how real-world mismatches limit performance.</p>
+                </div>
+                
+                <div class="info-card">
+                    <h4>Spatial Control</h4>
+                    <p>Understand how antenna spacing, element count, and array geometry determine your ability to control radiation patterns.</p>
+                </div>
+                
+                <div class="info-card">
+                    <h4>Adaptive Algorithms</h4>
+                    <p>Watch optimization algorithms automatically find the best phase settings to minimize interference from specific directions.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h3>💡 Perfect For</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4>Students</h4>
+                    <p>Engineering students learning electromagnetics, antenna theory, or digital signal processing concepts through interactive visualization.</p>
+                </div>
+                
+                <div class="info-card">
+                    <h4>Engineers</h4>
+                    <p>RF engineers working on beamforming, interference cancellation, radar systems, or wireless communications.</p>
+                </div>
+                
+                <div class="info-card">
+                    <h4>Educators</h4>
+                    <p>Professors and instructors looking for engaging tools to demonstrate complex RF concepts in classrooms or workshops.</p>
+                </div>
+                
+                <div class="info-card">
+                    <h4>Researchers</h4>
+                    <p>Anyone exploring adaptive algorithms, array processing, or investigating novel antenna array configurations.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add some interactive hover effects
+        document.querySelectorAll('.simulator-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-10px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+
+        // Smooth scroll for any internal links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>
