@@ -2,6 +2,9 @@
 
 An educational tool for understanding Radio Frequency (RF) nulling and antenna array beamforming through interactive 3D visualization.
 
+![2d screenshot](/images/2d_nulling_sim.png)
+![3d screenshot](/images/3d_nulling_sim.png)
+
 ## 🎯 What This Simulation Does
 
 This tool demonstrates how **multiple antenna elements** can be configured to create **nulls** (dead zones) in specific directions, effectively canceling unwanted interference while maintaining desired signal reception.
